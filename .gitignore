@@ -137,3 +137,6 @@ pretrain
 .DS_Store
 
 .vscode
+
+# ignore dat
+*.dat
