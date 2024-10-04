@@ -3,6 +3,25 @@ import logging
 import numpy as np
 from mmengine.dataset import BaseDataset, Compose
 from mmengine.logging import print_log
+from mmcv.transforms.base import BaseTransform
+
+
+class BasePackInputs(BaseTransform):
+
+    def __init__(self, meta_keys):
+        self.meta_keys = meta_keys
+
+    def transform(self, results):
+        """
+        :param results:
+        :return: a dict
+        """
+        raise NotImplementedError
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(meta_keys={self.meta_keys})'
+        return repr_str
 
 
 class InvalidGomokuSampleError(Exception):
