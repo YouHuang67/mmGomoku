@@ -56,4 +56,11 @@ class PolicyValueTrainerV0(BaseTrainer):
 
     @torch.no_grad()
     def forward_test(self, inputs, targets, data_samples, **kwargs):
-        raise NotImplementedError
+        if self.neck is None:
+            results = self.decode_head(self.backbone(inputs))
+        else:
+            results = self.decode_head(self.neck(self.backbone(inputs)))
+        action_probs = results['action_probs']
+        action_probs = action_probs.flatten(1)  # B, H * W
+        values = results['values']
+        return action_probs, values, targets
