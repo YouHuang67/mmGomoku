@@ -143,11 +143,12 @@ class MCTSV0(object):
 
 if __name__ == '__main__':
     import models
-    from mcts_search.wrappers import ActionValueEvaluatorV0
+    # from mcts_search.wrappers import ActionValueEvaluatorV0
+    from mcts_search.wrappers import ActionValueEvaluatorV1
 
     _board = Board()
 
-    _evaluator = ActionValueEvaluatorV0(
+    _evaluator = ActionValueEvaluatorV1(
         backbone=dict(
             type='SimpleResNet',
             depth=16,
