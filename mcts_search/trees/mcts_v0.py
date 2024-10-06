@@ -162,16 +162,16 @@ if __name__ == '__main__':
             kernel_size=3),
         device='cpu'
     )
-    # _evaluator.load_state_dict(torch.load(
-    #     'work_dirs/cnn2410/vct_actions/'
-    #     '241004_pvt_v0_resnet_plain_d16_c64_k3_simaug_vct_actions_bs16_40k/'
-    #     'iter_40000.pth', map_location='cpu'
-    # )['state_dict'], strict=False)
     _evaluator.load_state_dict(torch.load(
         'work_dirs/cnn2410/vct_actions/'
-        '241005_pvt_v1_resnet_plain_d16_c64_k3_simaug_vct_actions_bs16_40k/'
+        '241004_pvt_v0_resnet_plain_d16_c64_k3_simaug_vct_actions_bs16_40k/'
         'iter_40000.pth', map_location='cpu'
     )['state_dict'], strict=False)
+    # _evaluator.load_state_dict(torch.load(
+    #     'work_dirs/cnn2410/vct_actions/'
+    #     '241005_pvt_v1_resnet_plain_d16_c64_k3_simaug_vct_actions_bs16_40k/'
+    #     'iter_40000.pth', map_location='cpu'
+    # )['state_dict'], strict=False)
     mcts = MCTSV0(_evaluator, [_board])
     while not _board.is_over:
         action, *_ = mcts.search()
