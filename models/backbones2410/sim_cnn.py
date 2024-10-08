@@ -79,7 +79,8 @@ class SimpleResNet(nn.Module):
                  kernel_size=3,
                  norm='bn',
                  block='plain',
-                 in_channels=3):
+                 in_channels=3,
+                 **kwargs):
         super(SimpleResNet, self).__init__()
         if block == 'plain':
             block_cls = PlainBlock
@@ -90,7 +91,7 @@ class SimpleResNet(nn.Module):
         self.conv = nn.Conv2d(in_channels, channels, 1)
         self.blocks = nn.Sequential()
         for _ in range(depth):
-            self.blocks.append(block_cls(channels, kernel_size, norm))
+            self.blocks.append(block_cls(channels, kernel_size, norm, **kwargs))
 
     def forward(self, x):
         x = self.conv(x)
