@@ -25,17 +25,16 @@ class RotaryEmbedding(nn.Module):
         coords = rearrange(coords, 'h w c -> (h w) c')
         freqs = torch.einsum('..., f -> ... f', coords, freqs)
         freqs = rearrange(freqs, '... d f -> ... (d f)', d=2)
-        self.register_buffer('freqs', freqs)
-        self.cls_freq = nn.Parameter(nn.Embedding(1, 2 * dim).weight)
+        self.register_buffer('freqs_cos', freqs.cos())
+        self.register_buffer('freqs_sin', freqs.sin())
 
     def forward(self, x):
         """
         :param x: (..., D)
         :return:  (..., D)
         """
-        freqs = torch.cat([self.freqs, self.cls_freq], dim=0)
-        freqs_cos = freqs.cos()
-        freqs_sin = freqs.sin()
+        freqs_cos = self.freqs_cos
+        freqs_sin = self.freqs_sin
         rt_x = x.new_empty(x.shape)
         rt_x[..., 0::2] = x[..., 1::2]
         rt_x[..., 1::2] = -x[..., 0::2]
@@ -139,34 +138,18 @@ class GKFormerV0(nn.Module):
         coords = torch.stack([ys.flatten(), xs.flatten()], dim=-1)
         self.register_buffer('coords', rearrange(coords, 'l c -> () l c'))
         self.in_proj = nn.Linear(in_dim + 2, embed_dim)
-
-        self.cls_token = nn.Embedding(1, embed_dim)
-
         self.rope = RotaryEmbedding(
             dim=embed_dim // num_heads // 2,
             size=size,
             ratio=rope_ratio,
             theta=rope_theta
         )
-
         self.blocks = nn.ModuleList([
             Block(embed_dim=embed_dim,
                   num_heads=num_heads,
                   mlp_ratio=mlp_ratio)
             for _ in range(depth)
         ])
-
-        self.action_mlp = nn.Sequential(
-            nn.Linear(embed_dim, embed_dim),
-            nn.GELU(),
-            nn.Linear(embed_dim, 1)
-        )
-
-        self.value_mlp = nn.Sequential(
-            nn.Linear(embed_dim, embed_dim),
-            nn.GELU(),
-            nn.Linear(embed_dim, 1)
-        )
 
     def forward(self, x):
         """
@@ -177,20 +160,13 @@ class GKFormerV0(nn.Module):
         x = rearrange(x, 'b c h w -> b (h w) c')
         x = torch.cat([x, self.coords.repeat(B, 1, 1)], dim=-1)
         x = self.in_proj(x)
-        cls_token = repeat(self.cls_token.weight, '() d -> b () d', b=B)
-        x = torch.cat([x, cls_token], dim=1)
-
         for block in self.blocks:
             x = block(x, rope=self.rope)
-        x, cls_token = x.split([H * W, 1], dim=1)
-        action_probs = self.action_mlp(x)
-        action_probs = rearrange(action_probs, 'b (h w) () -> b h w', h=H, w=W)
-        values = self.value_mlp(cls_token)
-        values = values.flatten()
-        return dict(action_probs=action_probs, values=values)
+        x = rearrange(x, 'b (h w) c -> b c h w', h=H, w=W)
+        return x
 
 
 if __name__ == '__main__':
     model = GKFormerV0(16, 64, 4, 1.0)
     out = model(torch.randint(2, size=(2, 3, 15, 15)).float())
-    print(out['action_probs'].shape, out['values'].shape)
+    print(out.shape)

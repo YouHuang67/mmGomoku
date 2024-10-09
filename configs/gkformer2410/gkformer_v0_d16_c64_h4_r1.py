@@ -10,7 +10,11 @@ model = dict(
         num_heads=4,
         mlp_ratio=1.0),
     neck=None,
-    decode_head=dict(type='EmptyHead'),
+    decode_head=dict(
+        type='SimplePolicyValueHead',
+        depth=3,
+        channels=64,
+        kernel_size=3),
     train_cfg=dict(),
     test_cfg=dict()
 )
