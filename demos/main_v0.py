@@ -56,9 +56,12 @@ def main():
         'ActionValueEvaluatorV1': ActionValueEvaluatorV1
     }[args.action_value_evaluator]
     evaluator = evaluator_cls(**model_config)
-    evaluator.load_state_dict(
-        torch.load(args.weight_path, map_location='cpu')['state_dict'],
-        strict=False)
+    state_dict = torch.load(args.weight_path, map_location='cpu')['state_dict']
+    state_dict.update({
+        k: v for k, v in evaluator.state_dict().items()
+        if not any(_ in k for _ in ['backbone', 'neck', 'decode_head'])
+    })
+    evaluator.load_state_dict(state_dict, strict=True)
 
     board = Board()
     mcts = MCTSV0(

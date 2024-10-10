@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 from mmseg.models.builder import MODELS
 
+from projects.cppboard import Board
+
 
 @MODELS.register_module()
 class SimplePolicyValueHead(nn.Module):
@@ -42,3 +44,20 @@ class SimplePolicyValueHead(nn.Module):
         action_probs = self.action_stem(x)
         values = self.value_stem(x)
         return dict(action_probs=action_probs, values=values.flatten())
+
+
+@MODELS.register_module()
+class FCPolicyValueHead(nn.Module):
+
+    def __init__(self, size=Board.BOARD_SIZE):
+        super(FCPolicyValueHead, self).__init__()
+        in_dim = size ** 2
+        self.size = size
+        self.bn = nn.BatchNorm1d(in_dim)
+        self.fc = nn.Linear(in_dim, 1, bias=True)
+
+    def forward(self, x):
+        out = torch.tanh(self.fc(self.bn(x.flatten(1))))
+        action_probs = x.reshape(-1, self.size, self.size)
+        values = out.flatten()
+        return dict(action_probs=action_probs, values=values)
